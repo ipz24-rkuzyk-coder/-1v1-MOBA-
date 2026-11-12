@@ -24,3 +24,10 @@ limit_top = 0
 limit_right = 2800
 limit_bottom = 648
 position_smoothing_enabled = true
+
+[node name="HpBar" type="ColorRect" parent="." unique_id=1623429439]
+offset_left = -16.0
+offset_top = -22.0
+offset_right = 16.0
+offset_bottom = -18.0
+color = Color(0.28235295, 0.73333335, 0.47058824, 1)
