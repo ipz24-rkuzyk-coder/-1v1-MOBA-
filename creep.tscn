@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://ct5omcpx5qaei"]
+
+[ext_resource type="Script" uid="uid://b2pidurawrjsm" path="res://creep.gd" id="1_5pn00"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_htemk"]
+size = Vector2(22, 22)
+
+[node name="Creep" type="CharacterBody2D" unique_id=1558828772]
+script = ExtResource("1_5pn00")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=219086871]
+offset_left = -11.0
+offset_top = -11.0
+offset_right = 11.0
+offset_bottom = 11.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=979731857]
+shape = SubResource("RectangleShape2D_htemk")

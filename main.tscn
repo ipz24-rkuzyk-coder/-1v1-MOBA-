@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://4iu6yoyte4m3"]
 
+[ext_resource type="Script" uid="uid://etuvhyj1yfyg" path="res://main.gd" id="1_0xm2m"]
 [ext_resource type="PackedScene" uid="uid://cbh4ddv262dhu" path="res://player.tscn" id="1_ig7tw"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ig7tw"]
@@ -12,6 +13,7 @@ size = Vector2(2800, 40)
 size = Vector2(40, 440)
 
 [node name="Main" type="Node2D" unique_id=924666471]
+script = ExtResource("1_0xm2m")
 
 [node name="Background" type="ColorRect" parent="." unique_id=849534937]
 offset_right = 2800.0
@@ -80,3 +82,7 @@ shape = SubResource("RectangleShape2D_htemk")
 [node name="CollisionShape2D4" type="CollisionShape2D" parent="Walls" unique_id=1315510888]
 position = Vector2(2700, 324)
 shape = SubResource("RectangleShape2D_htemk")
+
+[node name="WaveTimer" type="Timer" parent="." unique_id=883010905]
+wait_time = 8.0
+autostart = true
