@@ -14,6 +14,7 @@ var hp_bar_width: float = 32.0
 func _ready() -> void:
 	hp = max_hp
 	hp_bar_width = $HpBar.size.x
+	collision_mask = 3 # Взаємодіє зі стінами, юнітами та будівлями
 
 func _physics_process(delta: float) -> void:
 	# Рух на WASD або стрілки

@@ -9,6 +9,7 @@ var hp: float
 
 func _ready() -> void:
 	hp = max_hp
+	$AttackRange.collision_mask = 3 # Бачить і юнітів (шар 1), і вежі/Трони (шар 2)
 	add_to_group("creeps")
 	$AttackTimer.timeout.connect(_on_attack_timer_timeout)
 	
@@ -21,7 +22,7 @@ func _physics_process(_delta: float) -> void:
 	var target := get_enemy_in_range()
 	
 	if target != null:
-		# Зупиняємось і б'ємо ворога
+		# Зупиняємось і б'ємо ворога або вежу
 		velocity = Vector2.ZERO
 		if $AttackTimer.is_stopped():
 			$AttackTimer.start()

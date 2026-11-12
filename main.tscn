@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://etuvhyj1yfyg" path="res://main.gd" id="1_0xm2m"]
 [ext_resource type="PackedScene" uid="uid://cbh4ddv262dhu" path="res://player.tscn" id="1_ig7tw"]
+[ext_resource type="PackedScene" uid="uid://cvmxumw1woe1j" path="res://structure.tscn" id="3_h2yge"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ig7tw"]
 size = Vector2(2800, 40)
@@ -34,34 +35,6 @@ offset_right = 1470.0
 offset_bottom = 504.0
 color = Color(0.3529412, 0.60784316, 0.8352941, 1)
 
-[node name="PlayerThrone" type="ColorRect" parent="." unique_id=309695915]
-offset_left = 140.0
-offset_top = 284.0
-offset_right = 210.0
-offset_bottom = 354.0
-color = Color(0.19215687, 0.50980395, 0.80784315, 1)
-
-[node name="PlayerTower" type="ColorRect" parent="." unique_id=315901454]
-offset_left = 680.0
-offset_top = 296.0
-offset_right = 730.0
-offset_bottom = 346.0
-color = Color(0.3882353, 0.7019608, 0.92941177, 1)
-
-[node name="BotTower" type="ColorRect" parent="." unique_id=1621041040]
-offset_left = 2064.0
-offset_top = 296.0
-offset_right = 2114.0
-offset_bottom = 346.0
-color = Color(0.9882353, 0.5058824, 0.5058824, 1)
-
-[node name="BotThrone" type="ColorRect" parent="." unique_id=1079757140]
-offset_left = 2580.0
-offset_top = 284.0
-offset_right = 2650.0
-offset_bottom = 354.0
-color = Color(0.77254903, 0.1882353, 0.1882353, 1)
-
 [node name="Player" parent="." unique_id=1699101640 instance=ExtResource("1_ig7tw")]
 position = Vector2(320, 324)
 
@@ -86,3 +59,37 @@ shape = SubResource("RectangleShape2D_htemk")
 [node name="WaveTimer" type="Timer" parent="." unique_id=883010905]
 wait_time = 8.0
 autostart = true
+
+[node name="PlayerThrone" parent="." unique_id=884801317 instance=ExtResource("3_h2yge")]
+position = Vector2(160, 324)
+is_throne = true
+max_hp = 1200.0
+
+[node name="PlayerTower" parent="." unique_id=2063465649 instance=ExtResource("3_h2yge")]
+position = Vector2(650, 324)
+
+[node name="BotTower" parent="." unique_id=2132823612 instance=ExtResource("3_h2yge")]
+position = Vector2(2150, 324)
+direction = -1
+
+[node name="BotThrone" parent="." unique_id=1420866494 instance=ExtResource("3_h2yge")]
+position = Vector2(2640, 324)
+direction = -1
+is_throne = true
+max_hp = 1200.0
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=910743396]
+
+[node name="EndScreen" type="ColorRect" parent="CanvasLayer" unique_id=958999190]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ResultLabel" type="Label" parent="CanvasLayer/EndScreen" unique_id=1230226584]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="RestartButton" type="Button" parent="CanvasLayer/EndScreen" unique_id=2096422502]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0

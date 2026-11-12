@@ -1,0 +1,36 @@
+[gd_scene format=3 uid="uid://cvmxumw1woe1j"]
+
+[ext_resource type="Script" uid="uid://1yi2onvttnuq" path="res://structure.gd" id="1_wjqp0"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_14cdr"]
+size = Vector2(56, 56)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_htemk"]
+radius = 260.0
+
+[node name="Structure" type="StaticBody2D" unique_id=884801317]
+script = ExtResource("1_wjqp0")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1287224088]
+offset_left = -28.0
+offset_top = -28.0
+offset_right = 28.0
+offset_bottom = 28.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1547830743]
+shape = SubResource("RectangleShape2D_14cdr")
+
+[node name="HpBar" type="ColorRect" parent="." unique_id=1593315836]
+offset_left = -28.0
+offset_top = -36.0
+offset_right = 28.0
+offset_bottom = -30.0
+color = Color(0.28235295, 0.73333335, 0.47058824, 1)
+
+[node name="AttackRange" type="Area2D" parent="." unique_id=711263275]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackRange" unique_id=2009799811]
+shape = SubResource("CircleShape2D_htemk")
+
+[node name="AttackTimer" type="Timer" parent="." unique_id=2075323470]
+wait_time = 1.2
