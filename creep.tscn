@@ -5,6 +5,9 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_htemk"]
 size = Vector2(22, 22)
 
+[sub_resource type="CircleShape2D" id="CircleShape2D_htemk"]
+radius = 32.0
+
 [node name="Creep" type="CharacterBody2D" unique_id=1558828772]
 script = ExtResource("1_5pn00")
 
@@ -16,3 +19,17 @@ offset_bottom = 11.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=979731857]
 shape = SubResource("RectangleShape2D_htemk")
+
+[node name="AttackRange" type="Area2D" parent="." unique_id=1955671980]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackRange" unique_id=119296877]
+shape = SubResource("CircleShape2D_htemk")
+
+[node name="AttackTimer" type="Timer" parent="." unique_id=786284766]
+
+[node name="HpBar" type="ColorRect" parent="." unique_id=605444370]
+offset_left = -11.0
+offset_top = -17.0
+offset_right = 11.0
+offset_bottom = -14.0
+color = Color(0.28235295, 0.73333335, 0.47058824, 1)
