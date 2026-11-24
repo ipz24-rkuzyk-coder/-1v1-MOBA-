@@ -1217,3 +1217,4 @@ func _update_slowed(delta: float) -> void:
 			slowed_units.erase(id)
 		else:
 			slowed_units[id] = info
+		
