@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 RuneSystem="*uid://bqc58sjgvu4mw"
 SiegeManager="*uid://cmu5wqgpiu10y"
 MinimapSystem="*uid://cns7vpo0iyufn"
+AudioManager="*uid://duvreapcg7gxv"
 
 [display]
 
