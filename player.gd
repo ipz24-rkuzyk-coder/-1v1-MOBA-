@@ -26,6 +26,15 @@ const R_RADIUS: float = 115.0
 @export var attack_cooldown: float = 0.45
 @export var attack_range: float = 230.0
 
+# Hero progression: all three skills start at rank 1.
+const MAX_LEVEL: int = 12
+var level: int = 1
+var xp: int = 0
+var skill_points: int = 0
+var q_level: int = 1
+var e_level: int = 1
+var r_level: int = 1
+
 var direction: int = 1
 var hp: float
 var mana: float
@@ -145,6 +154,10 @@ var respawn_status_ui: Label
 var player_dead_banner: PanelContainer
 var player_dead_label: Label
 
+var xp_bar_ui: ProgressBar
+var xp_label_ui: Label
+var skill_points_label: Label
+var skill_upgrade_buttons: Array[Button] = []
 var skill_panels: Array[PanelContainer] = []
 var skill_status_labels: Array[Label] = []
 
@@ -292,7 +305,7 @@ func _physics_process(delta: float) -> void:
 	if cooldown_timer > 0.0:
 		cooldown_timer -= delta
 		
-	if not shop_panel.visible and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and cooldown_timer <= 0.0:
+	if not shop_panel.visible and not skill_upgrade_buttons.has(get_viewport().gui_get_hovered_control()) and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and cooldown_timer <= 0.0:
 		shoot()
 		cooldown_timer = _get_effective_attack_cooldown()
 	
@@ -319,7 +332,7 @@ func cast_q() -> void:
 		return
 		
 	mana -= Q_MANA
-	q_cd = Q_COOLDOWN * (1.0 - cdr)
+	q_cd = _q_cooldown() * (1.0 - cdr)
 	
 	var aim_dir: Vector2 = (get_global_mouse_position() - global_position).normalized()
 	if aim_dir == Vector2.ZERO:
@@ -327,7 +340,7 @@ func cast_q() -> void:
 		
 	var projectile := PROJECTILE_SCENE.instantiate()
 	projectile.team = direction
-	projectile.damage = (_get_effective_damage() * 2.2 + 30.0) * (1.0 + spell_amp)
+	projectile.damage = (_get_effective_damage() * 2.2 + _q_bonus_damage()) * (1.0 + spell_amp)
 	projectile.max_range = 420.0
 	projectile.speed = 750.0
 	projectile.target = null
@@ -351,14 +364,14 @@ func cast_e() -> void:
 		return
 		
 	mana -= E_MANA
-	e_cd = E_COOLDOWN * (1.0 - cdr)
+	e_cd = _e_cooldown() * (1.0 - cdr)
 	
 	var start_pos: Vector2 = global_position
 	var dash_dir: Vector2 = (get_global_mouse_position() - global_position).normalized()
 	if dash_dir == Vector2.ZERO:
 		dash_dir = Vector2.RIGHT
 		
-	var max_dist: float = E_DASH_DIST
+	var max_dist: float = _e_dash_distance()
 	var space_state: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state
 	
 	var ray := PhysicsRayQueryParameters2D.create(start_pos, start_pos + dash_dir * max_dist, 7, [get_rid()])
@@ -375,9 +388,10 @@ func cast_e() -> void:
 			hit = space_state.intersect_ray(ray)
 			
 	var target_pos: Vector2 = start_pos + dash_dir * max_dist
-	var vp_size: Vector2 = get_viewport_rect().size
-	target_pos.x = clampf(target_pos.x, 45.0, vp_size.x - 45.0)
-	target_pos.y = clampf(target_pos.y, 45.0, vp_size.y - 45.0)
+	var arena_right: float = float($Camera2D.limit_right) - 140.0
+	var arena_bottom: float = float($Camera2D.limit_bottom) - 166.0
+	target_pos.x = clampf(target_pos.x, 100.0, arena_right)
+	target_pos.y = clampf(target_pos.y, 166.0, arena_bottom)
 	
 	if has_node("CollisionShape2D") and $CollisionShape2D.shape != null:
 		var query := PhysicsShapeQueryParameters2D.new()
@@ -389,8 +403,8 @@ func cast_e() -> void:
 		query.transform = Transform2D(0.0, target_pos)
 		while space_state.intersect_shape(query, 1).size() > 0 and push_steps < 6:
 			target_pos += dash_dir * 18.0
-			target_pos.x = clampf(target_pos.x, 45.0, vp_size.x - 45.0)
-			target_pos.y = clampf(target_pos.y, 45.0, vp_size.y - 45.0)
+			target_pos.x = clampf(target_pos.x, 100.0, arena_right)
+			target_pos.y = clampf(target_pos.y, 166.0, arena_bottom)
 			query.transform = Transform2D(0.0, target_pos)
 			push_steps += 1
 			
@@ -430,7 +444,7 @@ func cast_r() -> void:
 	active_effects.append({
 		"type": "blast",
 		"pos": blast_pos,
-		"radius": R_RADIUS,
+		"radius": _r_radius(),
 		"time": 0.45,
 		"max_time": 0.45
 	})
@@ -438,9 +452,9 @@ func cast_r() -> void:
 	
 	var main_node: Node = get_tree().get_first_node_in_group("main")
 	if is_instance_valid(main_node) and main_node.has_method("spawn_hit_effect"):
-		main_node.spawn_hit_effect(blast_pos, Color("#b794f4"), R_RADIUS, 20)
+		main_node.spawn_hit_effect(blast_pos, Color("#b794f4"), _r_radius(), 20)
 	
-	var ult_damage: float = (_get_effective_damage() * 2.5 + 90.0) * (1.0 + spell_amp)
+	var ult_damage: float = (_get_effective_damage() * 2.5 + _r_bonus_damage()) * (1.0 + spell_amp)
 	for node in get_parent().get_children():
 		if node != self and node is Node2D and node.has_method("take_damage") and node.get("direction") != null and int(node.get("direction")) != direction:
 			if node.is_in_group("structures") or node is StaticBody2D:
@@ -450,7 +464,7 @@ func cast_r() -> void:
 			var hp_val = node.get("hp")
 			if hp_val == null or float(hp_val) <= 0.0:
 				continue
-			if node.global_position.distance_to(blast_pos) <= R_RADIUS + 20.0:
+			if node.global_position.distance_to(blast_pos) <= _r_radius() + 20.0:
 				if "last_attacker" in node:
 					node.last_attacker = self
 				node.take_damage(ult_damage)
@@ -629,6 +643,8 @@ func take_damage(amount: float) -> void:
 		register_kill(false)
 		if is_instance_valid(last_attacker) and last_attacker.has_method("add_gold"):
 			last_attacker.add_gold(150, global_position)
+			if last_attacker.is_in_group("heroes") and last_attacker.has_method("gain_xp") and int(last_attacker.get("direction")) != direction:
+				last_attacker.gain_xp(120 + maxi(0, level - int(last_attacker.get("level"))) * 20)
 		global_position = BLUE_THRONE_POS
 
 func _respawn_player() -> void:
@@ -788,6 +804,19 @@ func _build_hud() -> void:
 	mana_bar_ui.add_child(mana_label_ui)
 	mana_label_ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	
+	xp_bar_ui = _create_bar(Color("#805ad5"), Color("#25203d"))
+	vbox.add_child(xp_bar_ui)
+	xp_label_ui = Label.new()
+	xp_label_ui.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	xp_label_ui.add_theme_font_size_override("font_size", 12)
+	xp_bar_ui.add_child(xp_label_ui)
+	xp_label_ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	skill_points_label = Label.new()
+	skill_points_label.add_theme_font_size_override("font_size", 12)
+	skill_points_label.add_theme_color_override("font_color", Color("#d6bcfa"))
+	vbox.add_child(skill_points_label)
+	_update_xp_hud()
+
 	var inv_row := HBoxContainer.new()
 	inv_row.add_theme_constant_override("separation", 4)
 	vbox.add_child(inv_row)
@@ -875,6 +904,14 @@ func _build_skills_hud() -> void:
 		vbox.add_theme_constant_override("separation", 2)
 		box.add_child(vbox)
 		
+		var upgrade_btn := Button.new()
+		upgrade_btn.focus_mode = Control.FOCUS_NONE
+		upgrade_btn.add_theme_font_size_override("font_size", 11)
+		upgrade_btn.text = "+ Рівень 1"
+		upgrade_btn.pressed.connect(upgrade_skill.bind(skill_upgrade_buttons.size()))
+		vbox.add_child(upgrade_btn)
+		skill_upgrade_buttons.append(upgrade_btn)
+
 		var top_lbl := Label.new()
 		top_lbl.text = "%s %s (%d MP)" % [info["key"], info["title"], info["cost"]]
 		top_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -895,7 +932,12 @@ func _update_skills_hud() -> void:
 	var costs: Array[float] = [Q_MANA, E_MANA, R_MANA]
 	var ready_colors: Array[Color] = [Color("#00f5d4"), Color("#63b3ed"), Color("#b794f4")]
 	
+	var ranks: Array[int] = [q_level, e_level, r_level]
+	var caps: Array[int] = [4, 4, 3]
 	for i in range(3):
+		var btn: Button = skill_upgrade_buttons[i]
+		btn.text = "+ [%d] %d/%d" % [i + 1, ranks[i], caps[i]] if ranks[i] < caps[i] else "MAX %d/%d" % [ranks[i], caps[i]]
+		btn.disabled = not can_upgrade_skill(i)
 		var box: PanelContainer = skill_panels[i]
 		var lbl: Label = skill_status_labels[i]
 		var box_sb := box.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
@@ -1128,3 +1170,110 @@ func _update_hud(on_fountain: bool) -> void:
 		elixir_label_ui.text = "🔥 Еліксир люті: %.1f с" % elixir_timer
 	else:
 		elixir_label_ui.visible = false
+
+
+func xp_to_next() -> int:
+	return 100 + (level - 1) * 45
+
+func _q_bonus_damage() -> float:
+	return 30.0 + float(q_level - 1) * 25.0
+
+func _q_cooldown() -> float:
+	return Q_COOLDOWN - float(q_level - 1) * 0.5
+
+func _e_dash_distance() -> float:
+	return E_DASH_DIST + float(e_level - 1) * 20.0
+
+func _e_cooldown() -> float:
+	return E_COOLDOWN - float(e_level - 1) * 0.8
+
+func _r_bonus_damage() -> float:
+	return 90.0 + float(r_level - 1) * 55.0
+
+func _r_radius() -> float:
+	return R_RADIUS + float(r_level - 1) * 15.0
+
+func can_upgrade_skill(index: int) -> bool:
+	if skill_points <= 0:
+		return false
+	match index:
+		0:
+			return q_level < 4
+		1:
+			return e_level < 4
+		2:
+			return r_level < 3
+	return false
+
+func upgrade_skill(index: int) -> bool:
+	if not can_upgrade_skill(index):
+		return false
+	match index:
+		0:
+			q_level += 1
+		1:
+			e_level += 1
+		2:
+			r_level += 1
+	skill_points -= 1
+	_update_skills_hud()
+	_update_xp_hud()
+	return true
+
+func gain_xp(amount: int) -> void:
+	if amount <= 0 or level >= MAX_LEVEL:
+		return
+	xp += amount
+	while level < MAX_LEVEL and xp >= xp_to_next():
+		xp -= xp_to_next()
+		level += 1
+		skill_points += 1
+		max_hp += 28.0
+		max_mana += 15.0
+		attack_damage += 2.5
+		hp_regen += 0.3
+		mana_regen += 0.4
+		if not is_dead:
+			hp = minf(max_hp, hp + 28.0)
+			mana = minf(max_mana, mana + 15.0)
+			$HpBar.size.x = hp_bar_width * hp / max_hp
+			spawn_floating_text(global_position, "РІВЕНЬ %d!" % level, Color("#f6e05e"))
+	if level == MAX_LEVEL:
+		xp = 0
+	_update_xp_hud()
+	_update_skills_hud()
+
+
+func _update_xp_hud() -> void:
+	if not is_instance_valid(xp_bar_ui):
+		return
+
+	xp_bar_ui.min_value = 0.0
+	xp_bar_ui.max_value = float(xp_to_next())
+
+	if level < MAX_LEVEL:
+		xp_bar_ui.set_value(float(xp))
+		xp_label_ui.text = "LVL %d | XP %d/%d" % [
+			level, xp, xp_to_next()
+		]
+	else:
+		xp_bar_ui.set_value(xp_bar_ui.max_value)
+		xp_label_ui.text = "LVL 12 | MAX"
+
+	if q_level == 4 and e_level == 4 and r_level == 3:
+		skill_points_label.text = "Усі здібності покращено"
+	else:
+		skill_points_label.text = "Очки навичок: %d (1/2/3)" % skill_points
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if is_instance_valid(shop_panel) and shop_panel.visible:
+			return
+		match event.keycode:
+			KEY_1:
+				upgrade_skill(0)
+			KEY_2:
+				upgrade_skill(1)
+			KEY_3:
+				upgrade_skill(2)

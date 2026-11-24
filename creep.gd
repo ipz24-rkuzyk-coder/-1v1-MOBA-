@@ -4,7 +4,7 @@ const LANE_Y: float = 324.0
 const LANE_MIN_Y: float = 245.0
 const LANE_MAX_Y: float = 405.0
 
-@export var direction: int = 1 # 1 — сині (вправо), -1 — червоні (вліво)
+@export var direction: int = 1
 @export var speed: float = 115.0
 @export var max_hp: float = 130.0
 @export var attack_damage: float = 14.0
@@ -23,8 +23,7 @@ func _ready() -> void:
 	hp = max_hp
 	if has_node("HpBar"):
 		hp_bar_width = $HpBar.size.x
-		
-	# Зіткнення лише між юнітами, щоб кріпи не застрягали об прямокутні вежі
+	
 	collision_layer = 1
 	collision_mask = 1
 	lane_offset_y = randf_range(-14.0, 14.0)
@@ -111,6 +110,17 @@ func take_damage(amount: float) -> void:
 		
 	if hp <= 0.0:
 		hp = 0.0
+		
+		# Нарахування досвіду героям поблизу
+		for hero in get_tree().get_nodes_in_group("heroes"):
+			if not is_instance_valid(hero) or not hero.has_method("gain_xp"):
+				continue
+			if int(hero.get("direction")) == direction or hero.get("is_dead") == true:
+				continue
+			if global_position.distance_to(hero.global_position) <= 550.0:
+				hero.gain_xp(35)
+		
+		# Нарахування золота за добивання
 		if is_instance_valid(last_attacker) and last_attacker.is_in_group("heroes") and last_attacker.has_method("add_gold"):
 			last_attacker.add_gold(28, global_position)
 		queue_free()

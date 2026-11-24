@@ -27,6 +27,15 @@ const R_RADIUS: float = 115.0
 @export var attack_cooldown: float = 0.48
 @export var attack_range: float = 230.0
 
+# Hero progression: all three skills start at rank 1.
+const MAX_LEVEL: int = 12
+var level: int = 1
+var xp: int = 0
+var skill_points: int = 0
+var q_level: int = 1
+var e_level: int = 1
+var r_level: int = 1
+
 var direction: int = -1
 var hp: float
 var mana: float
@@ -167,7 +176,7 @@ func _update_tag_label() -> void:
 		diff_tag = "Легко"
 	elif difficulty == "hard":
 		diff_tag = "Хард"
-	tag_label.text = "БОТ (%s) [%d/12]" % [diff_tag, build_step]
+	tag_label.text = "БОТ (%s) Lvl.%d [%d/12]" % [diff_tag, level, build_step]
 
 func _draw() -> void:
 	if is_dead:
@@ -382,7 +391,7 @@ func _run_ai(delta: float, on_fountain: bool) -> void:
 		var aim_r_pos: Vector2 = _predict_player_pos(player, 1800.0) if difficulty == "hard" else player.global_position
 		
 		if r_cd <= 0.0 and mana >= R_MANA and global_position.distance_to(aim_r_pos) <= R_CAST_RANGE:
-			var nearby_creeps: int = _count_blue_creeps_near(aim_r_pos, R_RADIUS)
+			var nearby_creeps: int = _count_blue_creeps_near(aim_r_pos, _r_radius())
 			if p_hp < p_max_hp * 0.72 or p_hp <= _estimate_r_damage() * 1.25 or nearby_creeps >= 2:
 				_cast_r(aim_r_pos)
 				
@@ -394,7 +403,7 @@ func _run_ai(delta: float, on_fountain: bool) -> void:
 			var can_aggro_blink: bool = (difficulty != "easy") and (p_hp <= _estimate_burst_damage() * 1.15 or p_hp < p_max_hp * 0.35)
 			if can_aggro_blink:
 				var blink_dir: Vector2 = (player.global_position - global_position).normalized()
-				var landing: Vector2 = global_position + blink_dir * E_DASH_DIST
+				var landing: Vector2 = global_position + blink_dir * _e_dash_distance()
 				if _get_dangerous_enemy_structure(landing, TOWER_DANGER_RADIUS + 5.0) == null:
 					_cast_e(blink_dir)
 	else:
@@ -403,7 +412,7 @@ func _run_ai(delta: float, on_fountain: bool) -> void:
 			if q_cd <= 0.0 and mana >= Q_MANA + 45.0 and global_position.distance_to(wave_center) <= 410.0:
 				_cast_q((wave_center - global_position).normalized())
 			elif difficulty != "easy" and r_cd <= 0.0 and mana >= R_MANA + 50.0 and global_position.distance_to(wave_center) <= R_CAST_RANGE:
-				if _count_blue_creeps_near(wave_center, R_RADIUS) >= 4:
+				if _count_blue_creeps_near(wave_center, _r_radius()) >= 4:
 					_cast_r(wave_center)
 					
 	var attack_target: Node2D = _choose_best_attack_target(player, player_alive)
@@ -454,10 +463,10 @@ func _is_line_clear_for_q(target_pos: Vector2) -> bool:
 	return true
 
 func _estimate_q_damage() -> float:
-	return (attack_damage * 2.2 + 30.0) * (1.0 + spell_amp)
+	return (attack_damage * 2.2 + _q_bonus_damage()) * (1.0 + spell_amp)
 
 func _estimate_r_damage() -> float:
-	return (attack_damage * 2.5 + 90.0) * (1.0 + spell_amp)
+	return (attack_damage * 2.5 + _r_bonus_damage()) * (1.0 + spell_amp)
 
 func _estimate_burst_damage() -> float:
 	var dmg: float = attack_damage * 2.0
@@ -494,7 +503,7 @@ func _check_incoming_skillshot_dodge() -> Vector2:
 func _find_dense_blue_creep_cluster(min_count: int = 3) -> Vector2:
 	for node in get_parent().get_children():
 		if node is Node2D and node.is_in_group("creeps") and int(node.get("direction")) == 1:
-			if _count_blue_creeps_near(node.global_position, R_RADIUS) >= min_count:
+			if _count_blue_creeps_near(node.global_position, _r_radius()) >= min_count:
 				return node.global_position
 	return Vector2.ZERO
 
@@ -681,7 +690,7 @@ func _cast_q(aim_dir: Vector2) -> void:
 	if aim_dir == Vector2.ZERO:
 		return
 	mana -= Q_MANA
-	q_cd = Q_COOLDOWN * (1.0 - cdr)
+	q_cd = _q_cooldown() * (1.0 - cdr)
 	var projectile := PROJECTILE_SCENE.instantiate()
 	projectile.team = direction
 	projectile.damage = _estimate_q_damage()
@@ -702,9 +711,9 @@ func _cast_e(dash_dir: Vector2) -> void:
 	if dash_dir == Vector2.ZERO:
 		return
 	mana -= E_MANA
-	e_cd = E_COOLDOWN * (1.0 - cdr)
+	e_cd = _e_cooldown() * (1.0 - cdr)
 	var start_pos: Vector2 = global_position
-	var max_dist: float = E_DASH_DIST
+	var max_dist: float = _e_dash_distance()
 	var space_state: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state
 	
 	var ray := PhysicsRayQueryParameters2D.create(start_pos, start_pos + dash_dir * max_dist, 6, [get_rid()])
@@ -764,7 +773,7 @@ func _cast_r(blast_pos: Vector2) -> void:
 	active_effects.append({
 		"type": "blast",
 		"pos": blast_pos,
-		"radius": R_RADIUS,
+		"radius": _r_radius(),
 		"time": 0.45,
 		"max_time": 0.45
 	})
@@ -772,7 +781,7 @@ func _cast_r(blast_pos: Vector2) -> void:
 	
 	var main_node: Node = get_tree().get_first_node_in_group("main")
 	if is_instance_valid(main_node) and main_node.has_method("spawn_hit_effect"):
-		main_node.spawn_hit_effect(blast_pos, Color("#fc8181"), R_RADIUS, 20)
+		main_node.spawn_hit_effect(blast_pos, Color("#fc8181"), _r_radius(), 20)
 	
 	var ult_damage: float = _estimate_r_damage()
 	for node in get_parent().get_children():
@@ -784,7 +793,7 @@ func _cast_r(blast_pos: Vector2) -> void:
 			var hp_val = node.get("hp")
 			if hp_val == null or float(hp_val) <= 0.0:
 				continue
-			if node.global_position.distance_to(blast_pos) <= R_RADIUS + 20.0:
+			if node.global_position.distance_to(blast_pos) <= _r_radius() + 20.0:
 				if "last_attacker" in node:
 					node.last_attacker = self
 				node.take_damage(ult_damage)
@@ -844,6 +853,8 @@ func take_damage(amount: float) -> void:
 				player.register_kill(true)
 			if is_instance_valid(last_attacker) and last_attacker == player and player.has_method("add_gold"):
 				player.add_gold(150, global_position)
+				if player.has_method("gain_xp"):
+					player.gain_xp(120 + maxi(0, level - int(player.get("level"))) * 20)
 		global_position = red_throne_pos + Vector2(-55.0, 0.0)
 		_try_buy_item()
 
@@ -879,3 +890,76 @@ func spawn_floating_text(world_pos: Vector2, text_value: String, text_color: Col
 	await tween.finished
 	if is_instance_valid(lbl):
 		lbl.queue_free()
+
+
+func xp_to_next() -> int:
+	return 100 + (level - 1) * 45
+
+func _q_bonus_damage() -> float:
+	return 30.0 + float(q_level - 1) * 25.0
+
+func _q_cooldown() -> float:
+	return Q_COOLDOWN - float(q_level - 1) * 0.5
+
+func _e_dash_distance() -> float:
+	return E_DASH_DIST + float(e_level - 1) * 20.0
+
+func _e_cooldown() -> float:
+	return E_COOLDOWN - float(e_level - 1) * 0.8
+
+func _r_bonus_damage() -> float:
+	return 90.0 + float(r_level - 1) * 55.0
+
+func _r_radius() -> float:
+	return R_RADIUS + float(r_level - 1) * 15.0
+
+func can_upgrade_skill(index: int) -> bool:
+	if skill_points <= 0:
+		return false
+	match index:
+		0:
+			return q_level < 4
+		1:
+			return e_level < 4
+		2:
+			return r_level < 3
+	return false
+
+func upgrade_skill(index: int) -> bool:
+	if not can_upgrade_skill(index):
+		return false
+	match index:
+		0:
+			q_level += 1
+		1:
+			e_level += 1
+		2:
+			r_level += 1
+	skill_points -= 1
+	return true
+
+func gain_xp(amount: int) -> void:
+	if amount <= 0 or level >= MAX_LEVEL:
+		return
+	xp += amount
+	while level < MAX_LEVEL and xp >= xp_to_next():
+		xp -= xp_to_next()
+		level += 1
+		skill_points += 1
+		max_hp += 28.0
+		max_mana += 15.0
+		attack_damage += 2.5
+		hp_regen += 0.3
+		mana_regen += 0.4
+		if not is_dead:
+			hp = minf(max_hp, hp + 28.0)
+			mana = minf(max_mana, mana + 15.0)
+			$HpBar.size.x = hp_bar_width * hp / max_hp
+			spawn_floating_text(global_position, "РІВЕНЬ %d!" % level, Color("#f6e05e"))
+		# R > Q > E; each level awards one point even at max skill ranks.
+		for index in [2, 0, 1]:
+			if upgrade_skill(index):
+				break
+	if level == MAX_LEVEL:
+		xp = 0
+	_update_tag_label()
