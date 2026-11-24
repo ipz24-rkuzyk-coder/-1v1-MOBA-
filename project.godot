@@ -23,6 +23,7 @@ MinimapSystem="*uid://cns7vpo0iyufn"
 AudioManager="*uid://duvreapcg7gxv"
 HeroVisuals="*uid://86bdicft4xw5"
 BattlefieldVisuals="*uid://b68nfmyl87x77"
+ArenaVisuals="*uid://bso2edotad4cb"
 
 [display]
 
