@@ -24,6 +24,9 @@ AudioManager="*uid://duvreapcg7gxv"
 HeroVisuals="*uid://86bdicft4xw5"
 BattlefieldVisuals="*uid://b68nfmyl87x77"
 ArenaVisuals="*uid://bso2edotad4cb"
+HeroClasses="*uid://wyvtowdbv638"
+ClassSkillFx="*uid://exm58pvmcs6k"
+ClassAttacks="*uid://dutom7bjh04og"
 
 [display]
 
