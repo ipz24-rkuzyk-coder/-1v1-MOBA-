@@ -28,6 +28,7 @@ HeroClasses="*uid://wyvtowdbv638"
 ClassSkillFx="*uid://exm58pvmcs6k"
 ClassAttacks="*uid://dutom7bjh04og"
 ClassHud="*uid://dfb2aaugyup8n"
+GameMenu="*uid://dsoenenqp2tce"
 
 [display]
 
